@@ -25,13 +25,13 @@ class DHCPServer {
         this.subnetMask = options.subnetMask || '255.255.255.0';
         this.gateway = options.gateway || '192.168.1.1';
         this.dns = options.dns || ['8.8.8.8', '8.8.4.4'];
-        this.leaseTime = options.leaseTime || 86400; 
-        
+        this.leaseTime = options.leaseTime || 86400;
+
         this.leases = new Map(); // Map<MAC, {ip: string, expires: number}>
         this.server = null;
         this.io = null;
-        
-     
+
+
         this.startIPNum = this.ipToNumber(this.startIP);
         this.endIPNum = this.ipToNumber(this.endIP);
     }
@@ -54,14 +54,14 @@ class DHCPServer {
         for (let ipNum = this.startIPNum; ipNum <= this.endIPNum; ipNum++) {
             const ip = this.numberToIP(ipNum);
             let isAvailable = true;
-            
+
             for (const lease of this.leases.values()) {
                 if (lease.ip === ip && lease.expires > Date.now()) {
                     isAvailable = false;
                     break;
                 }
             }
-            
+
             if (isAvailable) {
                 return ip;
             }
@@ -121,14 +121,14 @@ class DHCPServer {
                             gateway: this.gateway,
                             dns: this.dns
                         });
-                        
+
                         // Сохраняем информацию об аренде
                         this.leases.set(data.mac, {
                             ip: requestedIP,
                             expires: Date.now() + (this.leaseTime * 1000),
                             startTime: Date.now()
                         });
-                        
+
                         this.updateLeases();
                     } else {
                         send();
@@ -144,7 +144,7 @@ class DHCPServer {
             this.server.listen();
             this.log(`DHCP сервер запущен на интерфейсе ${this.interface}`);
             this.log(`Диапазон IP: ${this.startIP} - ${this.endIP}`);
-            
+
             if (this.io) {
                 this.io.emit('server-status', 'Запущен');
             }
@@ -193,12 +193,12 @@ const dhcpServer = new DHCPServer({
 // WebSocket
 io.on('connection', (socket) => {
     console.log('Клиент подключился к веб-интерфейсу');
-    
+
     socket.on('start-server', () => {
         dhcpServer.io = io;
         dhcpServer.start();
     });
-    
+
     socket.on('stop-server', () => {
         dhcpServer.stop();
     });
