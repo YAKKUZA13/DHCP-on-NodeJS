@@ -1,22 +1,20 @@
 {
   "name": "dhcp-server",
   "version": "1.0.0",
-  "description": "DHCP сервер на Node.js",
+  "description": "DHCP сервер с веб-интерфейсом",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon index.js",
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "dhcp": "^0.2.20",
+    "dhcp": "^0.3.17",
     "express": "^4.18.2",
-    "netmask": "^2.0.2",
     "socket.io": "^4.7.2"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.0.1"
   }
 }
