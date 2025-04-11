@@ -40,17 +40,11 @@ class DHCPServer {
     }
 
     ipToNumber(ip) {
-        return ip.split('.')
-            .reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+        return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
     }
 
     numberToIp(num) {
-        return [
-            (num >>> 24) & 255,
-            (num >>> 16) & 255,
-            (num >>> 8) & 255,
-            num & 255
-        ].join('.');
+        return [(num >>> 24) & 255, (num >>> 16) & 255, (num >>> 8) & 255, num & 255].join('.');
     }
 
     isIpInRange(ip) {
@@ -85,7 +79,7 @@ class DHCPServer {
                 subnetMask: this.subnetMask,
                 gateway: this.gateway,
                 dns: this.dns,
-                leaseTime: this.leaseTime
+                leaseTime: this.leaseTime,
             });
         }
     }
@@ -135,10 +129,10 @@ class DHCPServer {
                 leaseTime: this.leaseTime,
                 forceOptions: ['hostname', 'domainName', 'domainSearch', 'ntpServers'],
                 static: Object.fromEntries(this.reservations),
-                log: (msg) => this.log(msg)
+                log: msg => this.log(msg),
             });
 
-            this.server.on('message', (data) => {
+            this.server.on('message', data => {
                 const { type, message } = data;
                 this.log(`DHCP ${type}: ${message}`);
             });
@@ -150,19 +144,19 @@ class DHCPServer {
                 }
             });
 
-            this.server.on('error', (err) => {
+            this.server.on('error', err => {
                 this.log(`Ошибка DHCP сервера: ${err.message}`);
                 if (this.io) {
                     this.io.emit('server-status', 'Ошибка');
                 }
             });
 
-            this.server.on('bound', (state) => {
+            this.server.on('bound', state => {
                 const { mac, ip, expires } = state;
                 this.leases.set(mac, {
                     ip,
                     startTime: Date.now(),
-                    expires: Date.now() + (expires * 1000)
+                    expires: Date.now() + expires * 1000,
                 });
                 this.log(`Клиент ${mac} получил IP ${ip}`);
                 if (this.io) {
@@ -170,7 +164,7 @@ class DHCPServer {
                 }
             });
 
-            this.server.on('release', (state) => {
+            this.server.on('release', state => {
                 const { mac } = state;
                 if (this.leases.has(mac)) {
                     this.leases.delete(mac);
@@ -216,7 +210,7 @@ const dhcpServer = new DHCPServer();
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-io.on('connection', (socket) => {
+io.on('connection', socket => {
     console.log('Клиент подключился');
 
     socket.emit('settings-update', {
@@ -225,7 +219,7 @@ io.on('connection', (socket) => {
         subnetMask: dhcpServer.subnetMask,
         gateway: dhcpServer.gateway,
         dns: dhcpServer.dns,
-        leaseTime: dhcpServer.leaseTime
+        leaseTime: dhcpServer.leaseTime,
     });
 
     socket.emit('reservations-update', Object.fromEntries(dhcpServer.reservations));
@@ -239,7 +233,7 @@ io.on('connection', (socket) => {
             subnetMask: dhcpServer.subnetMask,
             gateway: dhcpServer.gateway,
             dns: dhcpServer.dns,
-            leaseTime: dhcpServer.leaseTime
+            leaseTime: dhcpServer.leaseTime,
         });
     });
 
@@ -247,7 +241,7 @@ io.on('connection', (socket) => {
         socket.emit('reservations-update', Object.fromEntries(dhcpServer.reservations));
     });
 
-    socket.on('update-settings', (settings) => {
+    socket.on('update-settings', settings => {
         dhcpServer.updateSettings(settings);
     });
 
@@ -255,7 +249,7 @@ io.on('connection', (socket) => {
         dhcpServer.addReservation(mac, ip);
     });
 
-    socket.on('remove-reservation', (mac) => {
+    socket.on('remove-reservation', mac => {
         dhcpServer.removeReservation(mac);
     });
 
@@ -277,4 +271,4 @@ dhcpServer.io = io;
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Сервер запущен на порту ${PORT}`);
-}); 
+});
