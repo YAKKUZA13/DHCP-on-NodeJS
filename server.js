@@ -1,39 +1,42 @@
 const dhcp = require('dhcp');
-const Netmask = require('netmask').Netmask;
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const socketIO = require('socket.io');
 const path = require('path');
+const os = require('os');
 
-// DHCP константы
-const DHCP_MESSAGE_TYPES = {
-    DISCOVER: 1,
-    OFFER: 2,
-    REQUEST: 3,
-    DECLINE: 4,
-    ACK: 5,
-    NAK: 6,
-    RELEASE: 7,
-    INFORM: 8
-};
+function getActiveInterface() {
+    const interfaces = os.networkInterfaces();
+    for (const [name, addrs] of Object.entries(interfaces)) {
+        for (const addr of addrs) {
+            if (addr.family === 'IPv4' && !addr.internal) {
+                return name;
+            }
+        }
+    }
+    return 'eth0';
+}
 
 class DHCPServer {
-    constructor(options = {}) {
-        this.interface = options.interface || 'eth0';
-        this.startIP = options.startIP || '192.168.1.100';
-        this.endIP = options.endIP || '192.168.1.200';
-        this.subnetMask = options.subnetMask || '255.255.255.0';
-        this.gateway = options.gateway || '192.168.1.1';
-        this.dns = options.dns || ['8.8.8.8', '8.8.4.4'];
-        this.leaseTime = options.leaseTime || 86400;
-
-        this.leases = new Map(); // Map<MAC, {ip: string, expires: number}>
+    constructor() {
+        this.interface = getActiveInterface();
+        this.startIP = '192.168.1.100';
+        this.endIP = '192.168.1.200';
+        this.subnetMask = '255.255.255.0';
+        this.gateway = '192.168.1.1';
+        this.dns = ['8.8.8.8', '8.8.4.4'];
+        this.leaseTime = 86400;
         this.server = null;
+        this.leases = new Map();
+        this.reservations = new Map();
         this.io = null;
+    }
 
-
-        this.startIPNum = this.ipToNumber(this.startIP);
-        this.endIPNum = this.ipToNumber(this.endIP);
+    log(message) {
+        console.log(`[DHCP] ${message}`);
+        if (this.io) {
+            this.io.emit('log', message);
+        }
     }
 
     ipToNumber(ip) {
@@ -41,7 +44,7 @@ class DHCPServer {
             .reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
     }
 
-    numberToIP(num) {
+    numberToIp(num) {
         return [
             (num >>> 24) & 255,
             (num >>> 16) & 255,
@@ -50,48 +53,79 @@ class DHCPServer {
         ].join('.');
     }
 
-    getNextAvailableIP() {
-        for (let ipNum = this.startIPNum; ipNum <= this.endIPNum; ipNum++) {
-            const ip = this.numberToIP(ipNum);
-            let isAvailable = true;
-
-            for (const lease of this.leases.values()) {
-                if (lease.ip === ip && lease.expires > Date.now()) {
-                    isAvailable = false;
-                    break;
-                }
-            }
-
-            if (isAvailable) {
-                return ip;
-            }
-        }
-        return null;
+    isIpInRange(ip) {
+        const ipNum = this.ipToNumber(ip);
+        const startNum = this.ipToNumber(this.startIP);
+        const endNum = this.ipToNumber(this.endIP);
+        return ipNum >= startNum && ipNum <= endNum;
     }
 
-    log(message) {
-        console.log(message);
+    isIpReserved(mac, ip) {
+        return this.reservations.has(mac) && this.reservations.get(mac) === ip;
+    }
+
+    updateSettings(settings) {
+        this.startIP = settings.startIP;
+        this.endIP = settings.endIP;
+        this.subnetMask = settings.subnetMask;
+        this.gateway = settings.gateway;
+        this.dns = settings.dns;
+        this.leaseTime = settings.leaseTime;
+
+        if (this.server) {
+            this.stop();
+            this.start();
+        }
+
+        this.log('Настройки сервера обновлены');
         if (this.io) {
-            this.io.emit('log', message);
+            this.io.emit('settings-update', {
+                startIP: this.startIP,
+                endIP: this.endIP,
+                subnetMask: this.subnetMask,
+                gateway: this.gateway,
+                dns: this.dns,
+                leaseTime: this.leaseTime
+            });
         }
     }
 
-    updateLeases() {
+    addReservation(mac, ip) {
+        if (!this.isIpInRange(ip)) {
+            this.log(`Ошибка: IP ${ip} вне допустимого диапазона`);
+            return false;
+        }
+
+        this.reservations.set(mac, ip);
+        this.log(`Добавлено резервирование: ${mac} -> ${ip}`);
+
         if (this.io) {
-            const leasesObj = {};
-            for (const [mac, lease] of this.leases.entries()) {
-                leasesObj[mac] = {
-                    ...lease,
-                    startTime: lease.startTime || Date.now()
-                };
-            }
-            this.io.emit('leases-update', leasesObj);
+            this.io.emit('reservations-update', Object.fromEntries(this.reservations));
         }
+        return true;
     }
 
-    async start() {
+    removeReservation(mac) {
+        if (this.reservations.has(mac)) {
+            const ip = this.reservations.get(mac);
+            this.reservations.delete(mac);
+            this.log(`Удалено резервирование: ${mac} -> ${ip}`);
+
+            if (this.io) {
+                this.io.emit('reservations-update', Object.fromEntries(this.reservations));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    start() {
+        if (this.server) {
+            this.log('Сервер уже запущен');
+            return;
+        }
+
         try {
-            // Создаем DHCP сервер
             this.server = dhcp.createServer({
                 interface: this.interface,
                 range: [this.startIP, this.endIP],
@@ -99,57 +133,57 @@ class DHCPServer {
                 gateway: this.gateway,
                 dns: this.dns,
                 leaseTime: this.leaseTime,
-                offer: (data, send) => {
-                    this.log(`Получен DHCP DISCOVER от ${data.mac}`);
-                    const availableIP = this.getNextAvailableIP();
-                    if (availableIP) {
-                        send({
-                            address: availableIP,
-                            netmask: this.subnetMask,
-                            gateway: this.gateway,
-                            dns: this.dns
-                        });
-                    }
-                },
-                request: (data, send) => {
-                    this.log(`Получен DHCP REQUEST от ${data.mac}`);
-                    const requestedIP = data.requestedIP;
-                    if (requestedIP && this.isIPInRange(requestedIP)) {
-                        send({
-                            address: requestedIP,
-                            netmask: this.subnetMask,
-                            gateway: this.gateway,
-                            dns: this.dns
-                        });
+                forceOptions: ['hostname', 'domainName', 'domainSearch', 'ntpServers'],
+                static: Object.fromEntries(this.reservations),
+                log: (msg) => this.log(msg)
+            });
 
-                        // Сохраняем информацию об аренде
-                        this.leases.set(data.mac, {
-                            ip: requestedIP,
-                            expires: Date.now() + (this.leaseTime * 1000),
-                            startTime: Date.now()
-                        });
+            this.server.on('message', (data) => {
+                const { type, message } = data;
+                this.log(`DHCP ${type}: ${message}`);
+            });
 
-                        this.updateLeases();
-                    } else {
-                        send();
+            this.server.on('listening', () => {
+                this.log(`DHCP сервер запущен на интерфейсе ${this.interface}`);
+                if (this.io) {
+                    this.io.emit('server-status', 'Запущен');
+                }
+            });
+
+            this.server.on('error', (err) => {
+                this.log(`Ошибка DHCP сервера: ${err.message}`);
+                if (this.io) {
+                    this.io.emit('server-status', 'Ошибка');
+                }
+            });
+
+            this.server.on('bound', (state) => {
+                const { mac, ip, expires } = state;
+                this.leases.set(mac, {
+                    ip,
+                    startTime: Date.now(),
+                    expires: Date.now() + (expires * 1000)
+                });
+                this.log(`Клиент ${mac} получил IP ${ip}`);
+                if (this.io) {
+                    this.io.emit('leases-update', Object.fromEntries(this.leases));
+                }
+            });
+
+            this.server.on('release', (state) => {
+                const { mac } = state;
+                if (this.leases.has(mac)) {
+                    this.leases.delete(mac);
+                    this.log(`Клиент ${mac} освободил IP`);
+                    if (this.io) {
+                        this.io.emit('leases-update', Object.fromEntries(this.leases));
                     }
-                },
-                release: (data) => {
-                    this.log(`Получен DHCP RELEASE от ${data.mac}`);
-                    this.leases.delete(data.mac);
-                    this.updateLeases();
                 }
             });
 
             this.server.listen();
-            this.log(`DHCP сервер запущен на интерфейсе ${this.interface}`);
-            this.log(`Диапазон IP: ${this.startIP} - ${this.endIP}`);
-
-            if (this.io) {
-                this.io.emit('server-status', 'Запущен');
-            }
         } catch (error) {
-            this.log('Ошибка при запуске сервера: ' + error.message);
+            this.log(`Ошибка при запуске сервера: ${error.message}`);
             if (this.io) {
                 this.io.emit('server-status', 'Ошибка');
             }
@@ -157,55 +191,90 @@ class DHCPServer {
     }
 
     stop() {
-        if (this.server) {
+        if (!this.server) {
+            this.log('Сервер не запущен');
+            return;
+        }
+
+        try {
             this.server.close();
             this.server = null;
+            this.log('DHCP сервер остановлен');
+            if (this.io) {
+                this.io.emit('server-status', 'Остановлен');
+            }
+        } catch (error) {
+            this.log(`Ошибка при остановке сервера: ${error.message}`);
         }
-        this.log('DHCP сервер остановлен');
-        if (this.io) {
-            this.io.emit('server-status', 'Остановлен');
-        }
-    }
-
-    isIPInRange(ip) {
-        const ipNum = this.ipToNumber(ip);
-        return ipNum >= this.startIPNum && ipNum <= this.endIPNum;
     }
 }
 
-
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIO(server);
+const dhcpServer = new DHCPServer();
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Создание и настройка DHCP сервера
-const dhcpServer = new DHCPServer({
-    interface: 'eth0',
-    startIP: '192.168.1.100',
-    endIP: '192.168.1.200',
-    subnetMask: '255.255.255.0',
-    gateway: '192.168.1.1',
-    dns: ['8.8.8.8', '8.8.4.4']
-});
-
-// WebSocket
 io.on('connection', (socket) => {
-    console.log('Клиент подключился к веб-интерфейсу');
+    console.log('Клиент подключился');
+
+    socket.emit('settings-update', {
+        startIP: dhcpServer.startIP,
+        endIP: dhcpServer.endIP,
+        subnetMask: dhcpServer.subnetMask,
+        gateway: dhcpServer.gateway,
+        dns: dhcpServer.dns,
+        leaseTime: dhcpServer.leaseTime
+    });
+
+    socket.emit('reservations-update', Object.fromEntries(dhcpServer.reservations));
+
+    socket.emit('leases-update', Object.fromEntries(dhcpServer.leases));
+
+    socket.on('get-settings', () => {
+        socket.emit('settings-update', {
+            startIP: dhcpServer.startIP,
+            endIP: dhcpServer.endIP,
+            subnetMask: dhcpServer.subnetMask,
+            gateway: dhcpServer.gateway,
+            dns: dhcpServer.dns,
+            leaseTime: dhcpServer.leaseTime
+        });
+    });
+
+    socket.on('get-reservations', () => {
+        socket.emit('reservations-update', Object.fromEntries(dhcpServer.reservations));
+    });
+
+    socket.on('update-settings', (settings) => {
+        dhcpServer.updateSettings(settings);
+    });
+
+    socket.on('add-reservation', ({ mac, ip }) => {
+        dhcpServer.addReservation(mac, ip);
+    });
+
+    socket.on('remove-reservation', (mac) => {
+        dhcpServer.removeReservation(mac);
+    });
 
     socket.on('start-server', () => {
-        dhcpServer.io = io;
         dhcpServer.start();
     });
 
     socket.on('stop-server', () => {
         dhcpServer.stop();
     });
+
+    socket.on('disconnect', () => {
+        console.log('Клиент отключился');
+    });
 });
 
+dhcpServer.io = io;
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Веб-интерфейс доступен по адресу http://localhost:${PORT}`);
+    console.log(`Сервер запущен на порту ${PORT}`);
 }); 

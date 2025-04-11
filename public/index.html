@@ -6,37 +6,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DHCP Сервер - Панель управления</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css" rel="stylesheet">
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
             background-color: #f5f5f5;
-            min-height: 100vh;
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            /* Из-за этого св-ва ломалась интерактивность кнопок*/
-            /* /* Из-за этого св-ва ломалась интерактивность кнопок*/
-            /* min-height: calc(100vh - 56px); */
-            /* Высота навбара */
         }
 
         .section {
             margin-bottom: 2rem;
             padding: 1.5rem;
-            background: #f8f9fa;
+            background: white;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .section h2 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
         }
 
         .status {
@@ -46,10 +36,48 @@
             margin-bottom: 1rem;
         }
 
-        .status h2 {
-            margin: 0;
-            font-size: 1.2rem;
-            color: #2c3e50;
+        .log {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5rem;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #34495e;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-right: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #34495e;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
         }
 
         .leases {
@@ -76,71 +104,54 @@
             background-color: #f8f9fa;
             color: #2c3e50;
             font-weight: 600;
-        }
-
-        .log {
-            background-color: #2c3e50;
-            color: #ecf0f1;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            height: 300px;
-            overflow-y: auto;
-            font-family: monospace;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .log-entry {
-            margin: 5px 0;
-            padding: 5px;
-            border-bottom: 1px solid #34495e;
-        }
-
-        .controls {
-            margin: 1.5rem 0;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            border: none;
             cursor: pointer;
+        }
+
+        th:hover {
+            background-color: #e9ecef;
+        }
+
+        .search-box {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 1rem;
+        }
+
+        .settings-form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
             font-weight: 500;
-            transition: all 0.2s;
-            margin-right: 0.5rem;
-            background-color: #2c3e50;
-            color: white;
-            z-index: 1000;
         }
 
-        .btn:hover {
-            background-color: #34495e;
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
 
-        .btn.active {
-            background-color: #27ae60;
-        }
-
-        .btn.active:hover {
-            background-color: #2ecc71;
-        }
-
-        .navbar {
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-bottom: 0;
-            height: 100px;
-        }
-
-        .navbar-brand {
-            font-weight: 600;
-        }
-
-        .nav-link {
-            font-weight: 500;
-        }
-
-        .mt-4 {
-            margin-top: 1.5rem !important;
+        .reservation-form {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
@@ -168,7 +179,7 @@
     <div class="container mt-4">
         <div class="section">
             <div class="status">
-                <h2>Статус сервера: <span id="server-status">Ожидает</span></h2>
+                <h2>Статус сервера: <span id="server-status">Остановлен</span></h2>
             </div>
 
             <div class="controls">
@@ -178,16 +189,73 @@
         </div>
 
         <div class="section">
+            <h2>Настройки сервера</h2>
+            <div class="settings-form">
+                <div class="form-group">
+                    <label for="start-ip">Начальный IP</label>
+                    <input type="text" id="start-ip" value="192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label for="end-ip">Конечный IP</label>
+                    <input type="text" id="end-ip" value="192.168.1.200">
+                </div>
+                <div class="form-group">
+                    <label for="subnet-mask">Маска подсети</label>
+                    <input type="text" id="subnet-mask" value="255.255.255.0">
+                </div>
+                <div class="form-group">
+                    <label for="gateway">Шлюз</label>
+                    <input type="text" id="gateway" value="192.168.1.1">
+                </div>
+                <div class="form-group">
+                    <label for="dns">DNS серверы</label>
+                    <input type="text" id="dns" value="8.8.8.8, 8.8.4.4">
+                </div>
+                <div class="form-group">
+                    <label for="lease-time">Время аренды (часы)</label>
+                    <input type="number" id="lease-time" value="24">
+                </div>
+            </div>
+            <button id="save-settings" class="btn btn-primary mt-3">Сохранить настройки</button>
+        </div>
+
+        <div class="section">
+            <h2>Резервирование IP-адресов</h2>
+            <div class="reservation-form">
+                <div class="form-group">
+                    <label for="mac-address">MAC адрес</label>
+                    <input type="text" id="mac-address" placeholder="00:11:22:33:44:55">
+                </div>
+                <div class="form-group">
+                    <label for="reserved-ip">IP адрес</label>
+                    <input type="text" id="reserved-ip" placeholder="192.168.1.150">
+                </div>
+                <button id="add-reservation" class="btn btn-primary">Добавить резервирование</button>
+            </div>
+            <div id="reservations-list" class="mt-3">
+                <!-- Здесь будет список резервирований -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Статистика использования IP-адресов</h2>
+            <div class="chart-container">
+                <canvas id="ip-usage-chart"></canvas>
+            </div>
+        </div>
+
+        <div class="section">
             <h2>Активные аренды</h2>
             <div class="leases">
+                <input type="text" class="search-box" placeholder="Поиск по MAC или IP адресу...">
                 <table>
                     <thead>
                         <tr>
-                            <th>MAC адрес</th>
-                            <th>IP адрес</th>
-                            <th>Время начала</th>
-                            <th>Время окончания</th>
-                            <th>Статус</th>
+                            <th data-sort="mac">MAC адрес</th>
+                            <th data-sort="ip">IP адрес</th>
+                            <th data-sort="start">Время начала</th>
+                            <th data-sort="end">Время окончания</th>
+                            <th data-sort="status">Статус</th>
                         </tr>
                     </thead>
                     <tbody id="leases-table">
@@ -205,14 +273,53 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const logEntries = document.getElementById('log-entries');
-        const leasesTable = document.getElementById('leases-table');
         const serverStatus = document.getElementById('server-status');
         const startButton = document.getElementById('start-server');
         const stopButton = document.getElementById('stop-server');
+        const leasesTable = document.getElementById('leases-table');
+        const searchBox = document.querySelector('.search-box');
+        let leasesData = [];
+        let ipUsageChart;
+
+        // Инициализация графика
+        function initChart() {
+            const ctx = document.getElementById('ip-usage-chart').getContext('2d');
+            ipUsageChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Использовано', 'Свободно'],
+                    datasets: [{
+                        label: 'Использование IP-адресов',
+                        data: [0, 0],
+                        backgroundColor: ['#2c3e50', '#95a5a6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Обновление графика
+        function updateChart(leases) {
+            const totalIPs = 101; // 192.168.1.100 - 192.168.1.200
+            const usedIPs = Object.keys(leases).length;
+            const freeIPs = totalIPs - usedIPs;
+
+            ipUsageChart.data.datasets[0].data = [usedIPs, freeIPs];
+            ipUsageChart.update();
+        }
 
         function addLogEntry(message) {
             const entry = document.createElement('div');
@@ -223,49 +330,127 @@
         }
 
         function updateLeasesTable(leases) {
-            leasesTable.innerHTML = '';
-            for (const [mac, lease] of Object.entries(leases)) {
-                const row = document.createElement('tr');
-                const startTime = new Date(lease.startTime).toLocaleString();
-                const endTime = new Date(lease.expires).toLocaleString();
-                const status = lease.expires > Date.now() ? 'Активна' : 'Истекла';
+            leasesData = Object.entries(leases).map(([mac, lease]) => ({
+                mac,
+                ip: lease.ip,
+                startTime: new Date(lease.startTime).toLocaleString(),
+                endTime: new Date(lease.expires).toLocaleString(),
+                status: lease.expires > Date.now() ? 'Активна' : 'Истекла'
+            }));
 
-                row.innerHTML = `
-                    <td>${mac}</td>
-                    <td>${lease.ip}</td>
-                    <td>${startTime}</td>
-                    <td>${endTime}</td>
-                    <td>${status}</td>
-                `;
-                leasesTable.appendChild(row);
-            }
+            filterAndSortLeases();
+            updateChart(leases);
         }
 
+        function filterAndSortLeases() {
+            const searchTerm = searchBox.value.toLowerCase();
+            const filteredLeases = leasesData.filter(lease =>
+                lease.mac.toLowerCase().includes(searchTerm) ||
+                lease.ip.toLowerCase().includes(searchTerm)
+            );
+
+            leasesTable.innerHTML = '';
+            filteredLeases.forEach(lease => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${lease.mac}</td>
+                    <td>${lease.ip}</td>
+                    <td>${lease.startTime}</td>
+                    <td>${lease.endTime}</td>
+                    <td>${lease.status}</td>
+                `;
+                leasesTable.appendChild(row);
+            });
+        }
+
+        // Обработчики событий
         socket.on('log', (message) => {
             addLogEntry(message);
+        });
+
+        socket.on('server-status', (status) => {
+            serverStatus.textContent = status;
         });
 
         socket.on('leases-update', (leases) => {
             updateLeasesTable(leases);
         });
 
-        socket.on('server-status', (status) => {
-            serverStatus.textContent = status;
-            if (status === 'Запущен') {
-                startButton.classList.add('active');
-                stopButton.classList.remove('active');
-            } else {
-                startButton.classList.remove('active');
-                stopButton.classList.add('active');
-            }
+        socket.on('settings-update', (settings) => {
+            document.getElementById('start-ip').value = settings.startIP;
+            document.getElementById('end-ip').value = settings.endIP;
+            document.getElementById('subnet-mask').value = settings.subnetMask;
+            document.getElementById('gateway').value = settings.gateway;
+            document.getElementById('dns').value = settings.dns.join(', ');
+            document.getElementById('lease-time').value = settings.leaseTime / 3600;
         });
 
+        socket.on('reservations-update', (reservations) => {
+            const list = document.getElementById('reservations-list');
+            list.innerHTML = '';
+            Object.entries(reservations).forEach(([mac, ip]) => {
+                const div = document.createElement('div');
+                div.className = 'reservation-item';
+                div.innerHTML = `
+                    <span>${mac} -> ${ip}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeReservation('${mac}')">Удалить</button>
+                `;
+                list.appendChild(div);
+            });
+        });
+
+        // Обработчики кнопок
         startButton.addEventListener('click', () => {
             socket.emit('start-server');
         });
 
         stopButton.addEventListener('click', () => {
             socket.emit('stop-server');
+        });
+
+        document.getElementById('save-settings').addEventListener('click', () => {
+            const settings = {
+                startIP: document.getElementById('start-ip').value,
+                endIP: document.getElementById('end-ip').value,
+                subnetMask: document.getElementById('subnet-mask').value,
+                gateway: document.getElementById('gateway').value,
+                dns: document.getElementById('dns').value.split(',').map(dns => dns.trim()),
+                leaseTime: parseInt(document.getElementById('lease-time').value) * 3600
+            };
+            socket.emit('update-settings', settings);
+        });
+
+        document.getElementById('add-reservation').addEventListener('click', () => {
+            const mac = document.getElementById('mac-address').value;
+            const ip = document.getElementById('reserved-ip').value;
+            if (mac && ip) {
+                socket.emit('add-reservation', { mac, ip });
+                document.getElementById('mac-address').value = '';
+                document.getElementById('reserved-ip').value = '';
+            }
+        });
+
+        function removeReservation(mac) {
+            socket.emit('remove-reservation', mac);
+        }
+
+        // Сортировка таблицы
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const sortBy = th.dataset.sort;
+                leasesData.sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
+                filterAndSortLeases();
+            });
+        });
+
+        // Поиск
+        searchBox.addEventListener('input', filterAndSortLeases);
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', () => {
+            initChart();
+            socket.emit('get-settings');
+            socket.emit('get-reservations');
         });
     </script>
 </body>
