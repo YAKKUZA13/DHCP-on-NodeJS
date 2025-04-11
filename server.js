@@ -129,10 +129,10 @@ class DHCPServer {
                 leaseTime: this.leaseTime,
                 forceOptions: ['hostname', 'domainName', 'domainSearch', 'ntpServers'],
                 static: Object.fromEntries(this.reservations),
-                log: msg => this.log(msg),
+                log: (msg) => this.log(msg),
             });
 
-            this.server.on('message', data => {
+            this.server.on('message', (data) => {
                 const { type, message } = data;
                 this.log(`DHCP ${type}: ${message}`);
             });
@@ -144,14 +144,14 @@ class DHCPServer {
                 }
             });
 
-            this.server.on('error', err => {
+            this.server.on('error', (err) => {
                 this.log(`Ошибка DHCP сервера: ${err.message}`);
                 if (this.io) {
                     this.io.emit('server-status', 'Ошибка');
                 }
             });
 
-            this.server.on('bound', state => {
+            this.server.on('bound', (state) => {
                 const { mac, ip, expires } = state;
                 this.leases.set(mac, {
                     ip,
@@ -164,7 +164,7 @@ class DHCPServer {
                 }
             });
 
-            this.server.on('release', state => {
+            this.server.on('release', (state) => {
                 const { mac } = state;
                 if (this.leases.has(mac)) {
                     this.leases.delete(mac);
@@ -210,7 +210,7 @@ const dhcpServer = new DHCPServer();
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-io.on('connection', socket => {
+io.on('connection', (socket) => {
     console.log('Клиент подключился');
 
     socket.emit('settings-update', {
@@ -241,7 +241,7 @@ io.on('connection', socket => {
         socket.emit('reservations-update', Object.fromEntries(dhcpServer.reservations));
     });
 
-    socket.on('update-settings', settings => {
+    socket.on('update-settings', (settings) => {
         dhcpServer.updateSettings(settings);
     });
 
@@ -249,7 +249,7 @@ io.on('connection', socket => {
         dhcpServer.addReservation(mac, ip);
     });
 
-    socket.on('remove-reservation', mac => {
+    socket.on('remove-reservation', (mac) => {
         dhcpServer.removeReservation(mac);
     });
 

@@ -362,13 +362,13 @@
             function filterAndSortLeases() {
                 const searchTerm = searchBox.value.toLowerCase();
                 const filteredLeases = leasesData.filter(
-                    lease =>
+                    (lease) =>
                         lease.mac.toLowerCase().includes(searchTerm) ||
                         lease.ip.toLowerCase().includes(searchTerm)
                 );
 
                 leasesTable.innerHTML = '';
-                filteredLeases.forEach(lease => {
+                filteredLeases.forEach((lease) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                     <td>${lease.mac}</td>
@@ -382,19 +382,19 @@
             }
 
             // Обработчики событий
-            socket.on('log', message => {
+            socket.on('log', (message) => {
                 addLogEntry(message);
             });
 
-            socket.on('server-status', status => {
+            socket.on('server-status', (status) => {
                 serverStatus.textContent = status;
             });
 
-            socket.on('leases-update', leases => {
+            socket.on('leases-update', (leases) => {
                 updateLeasesTable(leases);
             });
 
-            socket.on('settings-update', settings => {
+            socket.on('settings-update', (settings) => {
                 document.getElementById('start-ip').value = settings.startIP;
                 document.getElementById('end-ip').value = settings.endIP;
                 document.getElementById('subnet-mask').value = settings.subnetMask;
@@ -403,7 +403,7 @@
                 document.getElementById('lease-time').value = settings.leaseTime / 3600;
             });
 
-            socket.on('reservations-update', reservations => {
+            socket.on('reservations-update', (reservations) => {
                 const list = document.getElementById('reservations-list');
                 list.innerHTML = '';
                 Object.entries(reservations).forEach(([mac, ip]) => {
@@ -435,7 +435,7 @@
                     dns: document
                         .getElementById('dns')
                         .value.split(',')
-                        .map(dns => dns.trim()),
+                        .map((dns) => dns.trim()),
                     leaseTime: parseInt(document.getElementById('lease-time').value) * 3600,
                 };
                 socket.emit('update-settings', settings);
@@ -456,7 +456,7 @@
             }
 
             // Сортировка таблицы
-            document.querySelectorAll('th[data-sort]').forEach(th => {
+            document.querySelectorAll('th[data-sort]').forEach((th) => {
                 th.addEventListener('click', () => {
                     const sortBy = th.dataset.sort;
                     leasesData.sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
