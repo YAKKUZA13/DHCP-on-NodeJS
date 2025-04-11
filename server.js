@@ -40,17 +40,11 @@ class DHCPServer {
     }
 
     ipToNumber(ip) {
-        return ip.split('.')
-            .reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
+        return ip.split('.').reduce((acc, octet) => (acc << 8) + parseInt(octet), 0) >>> 0;
     }
 
     numberToIp(num) {
-        return [
-            (num >>> 24) & 255,
-            (num >>> 16) & 255,
-            (num >>> 8) & 255,
-            num & 255
-        ].join('.');
+        return [(num >>> 24) & 255, (num >>> 16) & 255, (num >>> 8) & 255, num & 255].join('.');
     }
 
     isIpInRange(ip) {
@@ -85,7 +79,7 @@ class DHCPServer {
                 subnetMask: this.subnetMask,
                 gateway: this.gateway,
                 dns: this.dns,
-                leaseTime: this.leaseTime
+                leaseTime: this.leaseTime,
             });
         }
     }
@@ -98,7 +92,7 @@ class DHCPServer {
 
         this.reservations.set(mac, ip);
         this.log(`Добавлено резервирование: ${mac} -> ${ip}`);
-        
+
         if (this.io) {
             this.io.emit('reservations-update', Object.fromEntries(this.reservations));
         }
@@ -110,7 +104,7 @@ class DHCPServer {
             const ip = this.reservations.get(mac);
             this.reservations.delete(mac);
             this.log(`Удалено резервирование: ${mac} -> ${ip}`);
-            
+
             if (this.io) {
                 this.io.emit('reservations-update', Object.fromEntries(this.reservations));
             }
@@ -135,7 +129,7 @@ class DHCPServer {
                 leaseTime: this.leaseTime,
                 forceOptions: ['hostname', 'domainName', 'domainSearch', 'ntpServers'],
                 static: Object.fromEntries(this.reservations),
-                log: (msg) => this.log(msg)
+                log: (msg) => this.log(msg),
             });
 
             this.server.on('message', (data) => {
@@ -162,7 +156,7 @@ class DHCPServer {
                 this.leases.set(mac, {
                     ip,
                     startTime: Date.now(),
-                    expires: Date.now() + (expires * 1000)
+                    expires: Date.now() + expires * 1000,
                 });
                 this.log(`Клиент ${mac} получил IP ${ip}`);
                 if (this.io) {
@@ -225,7 +219,7 @@ io.on('connection', (socket) => {
         subnetMask: dhcpServer.subnetMask,
         gateway: dhcpServer.gateway,
         dns: dhcpServer.dns,
-        leaseTime: dhcpServer.leaseTime
+        leaseTime: dhcpServer.leaseTime,
     });
 
     socket.emit('reservations-update', Object.fromEntries(dhcpServer.reservations));
@@ -239,7 +233,7 @@ io.on('connection', (socket) => {
             subnetMask: dhcpServer.subnetMask,
             gateway: dhcpServer.gateway,
             dns: dhcpServer.dns,
-            leaseTime: dhcpServer.leaseTime
+            leaseTime: dhcpServer.leaseTime,
         });
     });
 
@@ -277,4 +271,4 @@ dhcpServer.io = io;
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Сервер запущен на порту ${PORT}`);
-}); 
+});

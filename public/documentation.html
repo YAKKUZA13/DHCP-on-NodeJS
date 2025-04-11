@@ -1,277 +1,337 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DHCP Сервер - Документация</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="styles.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: calc(100vh - 56px); /* Высота навбара */
-        }
-        .doc-section {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .doc-section h2 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-        .doc-section pre {
-            background: #2c3e50;
-            color: #ecf0f1;
-            padding: 1rem;
-            border-radius: 4px;
-            margin: 1rem 0;
-        }
-        .doc-section code {
-            background: #f1f1f1;
-            padding: 0.2rem 0.4rem;
-            border-radius: 3px;
-        }
-        .doc-nav {
-            position: sticky;
-            top: 20px;
-        }
-        .doc-nav .nav-link {
-            color: #2c3e50;
-        }
-        .doc-nav .nav-link:hover {
-            color: #3498db;
-        }
-        .doc-nav .nav-link.active {
-            color: #3498db;
-            font-weight: bold;
-        }
-        .navbar {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 0;
-            height: 100px;
-        }
-        .mt-4 {
-            margin-top: 1.5rem !important;
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.html">DHCP Сервер</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.html">Главная</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="documentation.html">Документация</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <div class="row">
-            <!-- Навигация по документации -->
-            <div class="col-md-3">
-                <div class="doc-nav">
-                    <h5>Содержание</h5>
-                    <nav class="nav flex-column">
-                        <a class="nav-link" href="#introduction">Введение</a>
-                        <a class="nav-link" href="#architecture">Архитектура</a>
-                        <a class="nav-link" href="#technical">Технические детали</a>
-                        <a class="nav-link" href="#installation">Установка</a>
-                        <a class="nav-link" href="#usage">Использование</a>
-                        <a class="nav-link" href="#code">Описание кода</a>
-                        <a class="nav-link" href="#faq">FAQ</a>
-                    </nav>
-                </div>
-            </div>
-
-            <!-- Основной контент -->
-            <div class="col-md-9">
-                <div id="introduction" class="doc-section">
-                    <h2>Введение</h2>
-                    <p>DHCP (Dynamic Host Configuration Protocol) - это протокол, который автоматически назначает IP-адреса устройствам в сети. Наш сервер реализует базовый функционал DHCP с веб-интерфейсом для управления.</p>
-                    
-                    <h4>Основные возможности:</h4>
-                    <ul>
-                        <li>Автоматическое назначение IP-адресов</li>
-                        <li>Настройка маски подсети</li>
-                        <li>Настройка шлюза (gateway)</li>
-                        <li>Настройка DNS-серверов</li>
-                        <li>Веб-интерфейс для управления</li>
-                        <li>Мониторинг активных аренд</li>
-                        <li>Логирование событий</li>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>DHCP Сервер - Документация</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link href="styles.css" rel="stylesheet" />
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                background-color: #f5f5f5;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                min-height: calc(100vh - 56px); /* Высота навбара */
+            }
+            .doc-section {
+                margin-bottom: 2rem;
+                padding: 1.5rem;
+                background: #f8f9fa;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .doc-section h2 {
+                color: #2c3e50;
+                margin-bottom: 1rem;
+            }
+            .doc-section pre {
+                background: #2c3e50;
+                color: #ecf0f1;
+                padding: 1rem;
+                border-radius: 4px;
+                margin: 1rem 0;
+            }
+            .doc-section code {
+                background: #f1f1f1;
+                padding: 0.2rem 0.4rem;
+                border-radius: 3px;
+            }
+            .doc-nav {
+                position: sticky;
+                top: 20px;
+            }
+            .doc-nav .nav-link {
+                color: #2c3e50;
+            }
+            .doc-nav .nav-link:hover {
+                color: #3498db;
+            }
+            .doc-nav .nav-link.active {
+                color: #3498db;
+                font-weight: bold;
+            }
+            .navbar {
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 0;
+                height: 100px;
+            }
+            .mt-4 {
+                margin-top: 1.5rem !important;
+            }
+        </style>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand" href="index.html">DHCP Сервер</a>
+                <button
+                    class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav"
+                >
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.html">Главная</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="documentation.html">Документация</a>
+                        </li>
                     </ul>
                 </div>
+            </div>
+        </nav>
 
-                <div id="architecture" class="doc-section">
-                    <h2>Архитектура системы</h2>
-                    <h4>Компоненты системы:</h4>
-                    <ol>
-                        <li><strong>DHCP сервер</strong> - основной компонент, обрабатывающий DHCP запросы</li>
-                        <li><strong>Веб-сервер</strong> - предоставляет веб-интерфейс</li>
-                        <li><strong>WebSocket сервер</strong> - обеспечивает real-time обновления</li>
-                        <li><strong>База данных аренд</strong> - хранит информацию о назначенных IP-адресах</li>
-                    </ol>
+        <div class="container mt-4">
+            <div class="row">
+                <!-- Навигация по документации -->
+                <div class="col-md-3">
+                    <div class="doc-nav">
+                        <h5>Содержание</h5>
+                        <nav class="nav flex-column">
+                            <a class="nav-link" href="#introduction">Введение</a>
+                            <a class="nav-link" href="#architecture">Архитектура</a>
+                            <a class="nav-link" href="#technical">Технические детали</a>
+                            <a class="nav-link" href="#installation">Установка</a>
+                            <a class="nav-link" href="#usage">Использование</a>
+                            <a class="nav-link" href="#code">Описание кода</a>
+                            <a class="nav-link" href="#faq">FAQ</a>
+                        </nav>
+                    </div>
+                </div>
 
-                    <h4>Потоки данных:</h4>
-                    <pre>
+                <!-- Основной контент -->
+                <div class="col-md-9">
+                    <div id="introduction" class="doc-section">
+                        <h2>Введение</h2>
+                        <p>
+                            DHCP (Dynamic Host Configuration Protocol) - это протокол, который
+                            автоматически назначает IP-адреса устройствам в сети. Наш сервер
+                            реализует базовый функционал DHCP с веб-интерфейсом для управления.
+                        </p>
+
+                        <h4>Основные возможности:</h4>
+                        <ul>
+                            <li>Автоматическое назначение IP-адресов</li>
+                            <li>Настройка маски подсети</li>
+                            <li>Настройка шлюза (gateway)</li>
+                            <li>Настройка DNS-серверов</li>
+                            <li>Веб-интерфейс для управления</li>
+                            <li>Мониторинг активных аренд</li>
+                            <li>Логирование событий</li>
+                        </ul>
+                    </div>
+
+                    <div id="architecture" class="doc-section">
+                        <h2>Архитектура системы</h2>
+                        <h4>Компоненты системы:</h4>
+                        <ol>
+                            <li>
+                                <strong>DHCP сервер</strong> - основной компонент, обрабатывающий
+                                DHCP запросы
+                            </li>
+                            <li><strong>Веб-сервер</strong> - предоставляет веб-интерфейс</li>
+                            <li>
+                                <strong>WebSocket сервер</strong> - обеспечивает real-time
+                                обновления
+                            </li>
+                            <li>
+                                <strong>База данных аренд</strong> - хранит информацию о назначенных
+                                IP-адресах
+                            </li>
+                        </ol>
+
+                        <h4>Потоки данных:</h4>
+                        <pre>
 Клиент -> DHCP сервер -> База данных аренд
-                    -> Веб-интерфейс (через WebSocket)</pre>
-                </div>
+                    -> Веб-интерфейс (через WebSocket)</pre
+                        >
+                    </div>
 
-                <div id="technical" class="doc-section">
-                    <h2>Технические детали</h2>
-                    <h4>Порты:</h4>
-                    <ul>
-                        <li><strong>67</strong> - порт DHCP сервера (входящие запросы)</li>
-                        <li><strong>68</strong> - порт DHCP клиента (исходящие ответы)</li>
-                        <li><strong>3000</strong> - порт веб-интерфейса</li>
-                    </ul>
+                    <div id="technical" class="doc-section">
+                        <h2>Технические детали</h2>
+                        <h4>Порты:</h4>
+                        <ul>
+                            <li><strong>67</strong> - порт DHCP сервера (входящие запросы)</li>
+                            <li><strong>68</strong> - порт DHCP клиента (исходящие ответы)</li>
+                            <li><strong>3000</strong> - порт веб-интерфейса</li>
+                        </ul>
 
-                    <h4>Протоколы:</h4>
-                    <ul>
-                        <li>UDP - для DHCP коммуникации</li>
-                        <li>HTTP - для веб-интерфейса</li>
-                        <li>WebSocket - для real-time обновлений</li>
-                    </ul>
-                </div>
+                        <h4>Протоколы:</h4>
+                        <ul>
+                            <li>UDP - для DHCP коммуникации</li>
+                            <li>HTTP - для веб-интерфейса</li>
+                            <li>WebSocket - для real-time обновлений</li>
+                        </ul>
+                    </div>
 
-                <div id="installation" class="doc-section">
-                    <h2>Установка и запуск</h2>
-                    <h4>Требования:</h4>
-                    <ul>
-                        <li>Node.js 14 или выше</li>
-                        <li>NPM (Node Package Manager)</li>
-                        <li>Права администратора</li>
-                        <li>Npcap (для Windows)</li>
-                    </ul>
+                    <div id="installation" class="doc-section">
+                        <h2>Установка и запуск</h2>
+                        <h4>Требования:</h4>
+                        <ul>
+                            <li>Node.js 14 или выше</li>
+                            <li>NPM (Node Package Manager)</li>
+                            <li>Права администратора</li>
+                            <li>Npcap (для Windows)</li>
+                        </ul>
 
-                    <h4>Установка Npcap (Windows):</h4>
-                    <ol>
-                        <li>Скачать Npcap с <a href="https://npcap.com/#download" target="_blank">https://npcap.com/#download</a></li>
-                        <li>Установить, выбрав "Install Npcap in WinPcap API-compatible Mode"</li>
-                    </ol>
+                        <h4>Установка Npcap (Windows):</h4>
+                        <ol>
+                            <li>
+                                Скачать Npcap с
+                                <a href="https://npcap.com/#download" target="_blank"
+                                    >https://npcap.com/#download</a
+                                >
+                            </li>
+                            <li>
+                                Установить, выбрав "Install Npcap in WinPcap API-compatible Mode"
+                            </li>
+                        </ol>
 
-                    <h4>Установка сервера:</h4>
-                    <pre># Клонировать репозиторий
+                        <h4>Установка сервера:</h4>
+                        <pre>
+# Клонировать репозиторий
 git clone [url-репозитория]
 
 # Перейти в директорию проекта
 cd dhcp-server
 
 # Установить зависимости
-npm install</pre>
-                </div>
-
-                <div id="usage" class="doc-section">
-                    <h2>Руководство пользователя</h2>
-                    <h4>Веб-интерфейс:</h4>
-                    <ol>
-                        <li>Открыть http://localhost:3000</li>
-                        <li>Нажать "Запустить сервер"</li>
-                        <li>Наблюдать за активными арендами в таблице</li>
-                        <li>Просматривать логи в реальном времени</li>
-                        <li>При необходимости остановить сервер</li>
-                    </ol>
-
-                    <h4>Подключение клиентского устройства:</h4>
-                    <div class="alert alert-info">
-                        <h5>Windows:</h5>
-                        <ol>
-                            <li>Откройте "Панель управления" → "Сеть и Интернет" → "Центр управления сетями и общим доступом"</li>
-                            <li>Нажмите "Изменение параметров адаптера"</li>
-                            <li>Правый клик на сетевом адаптере → "Свойства"</li>
-                            <li>Выберите "Протокол Интернета версии 4 (TCP/IPv4)" → "Свойства"</li>
-                            <li>Выберите "Получить IP-адрес автоматически"</li>
-                            <li>Выберите "Получить адрес DNS-сервера автоматически"</li>
-                            <li>Нажмите "ОК" для сохранения настроек</li>
-                        </ol>
-
-                        <h5>Linux:</h5>
-                        <ol>
-                            <li>Откройте терминал</li>
-                            <li>Отредактируйте файл конфигурации сети:
-                                <pre>sudo nano /etc/network/interfaces</pre>
-                            </li>
-                            <li>Добавьте следующие строки:
-                                <pre>auto eth0
-iface eth0 inet dhcp</pre>
-                            </li>
-                            <li>Сохраните файл (Ctrl+X, затем Y)</li>
-                            <li>Перезапустите сетевой интерфейс:
-                                <pre>sudo systemctl restart networking</pre>
-                            </li>
-                        </ol>
-
-                        <h5>Android:</h5>
-                        <ol>
-                            <li>Откройте "Настройки" → "Сеть и Интернет" → "Wi-Fi"</li>
-                            <li>Нажмите и удерживайте нужную сеть</li>
-                            <li>Выберите "Изменить сеть"</li>
-                            <li>Отметьте "Расширенные настройки"</li>
-                            <li>В разделе "Настройки IP" выберите "DHCP"</li>
-                            <li>Нажмите "Сохранить"</li>
-                        </ol>
-
-                        <h5>iOS:</h5>
-                        <ol>
-                            <li>Откройте "Настройки" → "Wi-Fi"</li>
-                            <li>Нажмите на значок (i) рядом с нужной сетью</li>
-                            <li>Прокрутите вниз до раздела "Настройка IP"</li>
-                            <li>Выберите "Автоматически"</li>
-                            <li>Нажмите "Назад" для сохранения</li>
-                        </ol>
+npm install</pre
+                        >
                     </div>
 
-                    <h4>Проверка подключения:</h4>
-                    <ol>
-                        <li>После настройки DHCP на клиентском устройстве, оно автоматически запросит IP-адрес</li>
-                        <li>В веб-интерфейсе DHCP сервера появится новая запись в таблице "Активные аренды"</li>
-                        <li>В журнале событий будут отображаться все этапы получения IP-адреса</li>
-                        <li>На клиентском устройстве можно проверить полученный IP-адрес:
-                            <ul>
-                                <li>Windows: команда <code>ipconfig</code> в командной строке</li>
-                                <li>Linux: команда <code>ifconfig</code> или <code>ip addr</code> в терминале</li>
-                                <li>Android/iOS: в настройках Wi-Fi или через приложение "Сеть"</li>
-                            </ul>
-                        </li>
-                    </ol>
+                    <div id="usage" class="doc-section">
+                        <h2>Руководство пользователя</h2>
+                        <h4>Веб-интерфейс:</h4>
+                        <ol>
+                            <li>Открыть http://localhost:3000</li>
+                            <li>Нажать "Запустить сервер"</li>
+                            <li>Наблюдать за активными арендами в таблице</li>
+                            <li>Просматривать логи в реальном времени</li>
+                            <li>При необходимости остановить сервер</li>
+                        </ol>
 
-                    <h4>Настройка сервера:</h4>
-                    <pre>const dhcpServer = new DHCPServer({
+                        <h4>Подключение клиентского устройства:</h4>
+                        <div class="alert alert-info">
+                            <h5>Windows:</h5>
+                            <ol>
+                                <li>
+                                    Откройте "Панель управления" → "Сеть и Интернет" → "Центр
+                                    управления сетями и общим доступом"
+                                </li>
+                                <li>Нажмите "Изменение параметров адаптера"</li>
+                                <li>Правый клик на сетевом адаптере → "Свойства"</li>
+                                <li>
+                                    Выберите "Протокол Интернета версии 4 (TCP/IPv4)" → "Свойства"
+                                </li>
+                                <li>Выберите "Получить IP-адрес автоматически"</li>
+                                <li>Выберите "Получить адрес DNS-сервера автоматически"</li>
+                                <li>Нажмите "ОК" для сохранения настроек</li>
+                            </ol>
+
+                            <h5>Linux:</h5>
+                            <ol>
+                                <li>Откройте терминал</li>
+                                <li>
+                                    Отредактируйте файл конфигурации сети:
+                                    <pre>sudo nano /etc/network/interfaces</pre>
+                                </li>
+                                <li>
+                                    Добавьте следующие строки:
+                                    <pre>
+auto eth0
+iface eth0 inet dhcp</pre
+                                    >
+                                </li>
+                                <li>Сохраните файл (Ctrl+X, затем Y)</li>
+                                <li>
+                                    Перезапустите сетевой интерфейс:
+                                    <pre>sudo systemctl restart networking</pre>
+                                </li>
+                            </ol>
+
+                            <h5>Android:</h5>
+                            <ol>
+                                <li>Откройте "Настройки" → "Сеть и Интернет" → "Wi-Fi"</li>
+                                <li>Нажмите и удерживайте нужную сеть</li>
+                                <li>Выберите "Изменить сеть"</li>
+                                <li>Отметьте "Расширенные настройки"</li>
+                                <li>В разделе "Настройки IP" выберите "DHCP"</li>
+                                <li>Нажмите "Сохранить"</li>
+                            </ol>
+
+                            <h5>iOS:</h5>
+                            <ol>
+                                <li>Откройте "Настройки" → "Wi-Fi"</li>
+                                <li>Нажмите на значок (i) рядом с нужной сетью</li>
+                                <li>Прокрутите вниз до раздела "Настройка IP"</li>
+                                <li>Выберите "Автоматически"</li>
+                                <li>Нажмите "Назад" для сохранения</li>
+                            </ol>
+                        </div>
+
+                        <h4>Проверка подключения:</h4>
+                        <ol>
+                            <li>
+                                После настройки DHCP на клиентском устройстве, оно автоматически
+                                запросит IP-адрес
+                            </li>
+                            <li>
+                                В веб-интерфейсе DHCP сервера появится новая запись в таблице
+                                "Активные аренды"
+                            </li>
+                            <li>
+                                В журнале событий будут отображаться все этапы получения IP-адреса
+                            </li>
+                            <li>
+                                На клиентском устройстве можно проверить полученный IP-адрес:
+                                <ul>
+                                    <li>
+                                        Windows: команда <code>ipconfig</code> в командной строке
+                                    </li>
+                                    <li>
+                                        Linux: команда <code>ifconfig</code> или
+                                        <code>ip addr</code> в терминале
+                                    </li>
+                                    <li>
+                                        Android/iOS: в настройках Wi-Fi или через приложение "Сеть"
+                                    </li>
+                                </ul>
+                            </li>
+                        </ol>
+
+                        <h4>Настройка сервера:</h4>
+                        <pre>
+const dhcpServer = new DHCPServer({
     interface: 'eth0',           // Сетевой интерфейс
     startIP: '192.168.1.100',    // Начало диапазона IP
     endIP: '192.168.1.200',      // Конец диапазона IP
     subnetMask: '255.255.255.0', // Маска подсети
     gateway: '192.168.1.1',      // Шлюз
     dns: ['8.8.8.8', '8.8.4.4'] // DNS серверы
-});</pre>
-                </div>
+});</pre
+                        >
+                    </div>
 
-                <div id="code" class="doc-section">
-                    <h2>Подробное описание кода</h2>
-                    <h4>Основные классы и модули</h4>
-                    <pre>class DHCPServer {
+                    <div id="code" class="doc-section">
+                        <h2>Подробное описание кода</h2>
+                        <h4>Основные классы и модули</h4>
+                        <pre>
+class DHCPServer {
     constructor(options = {}) {
         // Инициализация параметров сервера
     }
@@ -289,58 +349,64 @@ iface eth0 inet dhcp</pre>
     ipToNumber() { ... }
     numberToIP() { ... }
     getNextAvailableIP() { ... }
-}</pre>
-                </div>
+}</pre
+                        >
+                    </div>
 
-                <div id="faq" class="doc-section">
-                    <h2>Часто задаваемые вопросы</h2>
-                    
-                    <h4>1. Почему нужны права администратора?</h4>
-                    <p>Для работы с сетевыми пакетами на низком уровне требуются повышенные привилегии.</p>
+                    <div id="faq" class="doc-section">
+                        <h2>Часто задаваемые вопросы</h2>
 
-                    <h4>2. Как изменить диапазон IP-адресов?</h4>
-                    <p>Отредактировать параметры в конфигурации сервера:</p>
-                    <pre>startIP: '192.168.1.100',
-endIP: '192.168.1.200'</pre>
+                        <h4>1. Почему нужны права администратора?</h4>
+                        <p>
+                            Для работы с сетевыми пакетами на низком уровне требуются повышенные
+                            привилегии.
+                        </p>
 
-                    <h4>3. Как проверить работу сервера?</h4>
-                    <ol>
-                        <li>Запустить сервер</li>
-                        <li>Подключить клиентское устройство</li>
-                        <li>Проверить получение IP-адреса</li>
-                        <li>Просмотреть логи в веб-интерфейсе</li>
-                    </ol>
+                        <h4>2. Как изменить диапазон IP-адресов?</h4>
+                        <p>Отредактировать параметры в конфигурации сервера:</p>
+                        <pre>
+startIP: '192.168.1.100',
+endIP: '192.168.1.200'</pre
+                        >
+
+                        <h4>3. Как проверить работу сервера?</h4>
+                        <ol>
+                            <li>Запустить сервер</li>
+                            <li>Подключить клиентское устройство</li>
+                            <li>Проверить получение IP-адреса</li>
+                            <li>Просмотреть логи в веб-интерфейсе</li>
+                        </ol>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sections = document.querySelectorAll('.doc-section');
-            const navLinks = document.querySelectorAll('.doc-nav .nav-link');
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const sections = document.querySelectorAll('.doc-section');
+                const navLinks = document.querySelectorAll('.doc-nav .nav-link');
 
-            function setActiveLink() {
-                let current = '';
-                sections.forEach(section => {
-                    const sectionTop = section.offsetTop;
-                    if (window.pageYOffset >= sectionTop - 60) {
-                        current = section.getAttribute('id');
-                    }
-                });
+                function setActiveLink() {
+                    let current = '';
+                    sections.forEach((section) => {
+                        const sectionTop = section.offsetTop;
+                        if (window.pageYOffset >= sectionTop - 60) {
+                            current = section.getAttribute('id');
+                        }
+                    });
 
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href').slice(1) === current) {
-                        link.classList.add('active');
-                    }
-                });
-            }
+                    navLinks.forEach((link) => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href').slice(1) === current) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
 
-            window.addEventListener('scroll', setActiveLink);
-            setActiveLink();
-        });
-    </script>
-</body>
-</html> 
+                window.addEventListener('scroll', setActiveLink);
+                setActiveLink();
+            });
+        </script>
+    </body>
+</html>
